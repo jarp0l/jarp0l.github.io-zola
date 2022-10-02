@@ -1,0 +1,36 @@
+base_url = "https://jarp0l.github.io/"
+title = "jarp0l's blog"
+compile_sass = true
+minify_html = true
+render_emoji = true
+build_search_index = false
+
+generate_feed = true
+feed_filename = "rss.xml"
+
+theme = "apolloX"
+
+taxonomies = [
+    {name = "tags", rss = true},
+]
+
+[markdown]
+highlight_code = true
+highlight_theme = "dracula"
+
+[extra]
+toc = true
+use_cdn = false
+# favicon = "/icon/favicon.png"
+
+menu = [
+    { name= "/all_posts", url= "/posts", weight= 0 },
+    { name= "/tags", url= "/tags", weight= 1 },
+    { name= "/about", url= "/about", weight= 2 },
+    { name= "/rss", url= "/rss.xml", weight= 3 },
+]
+
+# socials = [
+#     { name= "github", url= "https=//github.com/jarp0l/", icon = "github" },
+# ]
+
