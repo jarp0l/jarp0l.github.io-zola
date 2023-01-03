@@ -22,7 +22,7 @@ Example of making HTTP request in js:
 ChatGPT (answer stripped):
 To make an HTTP request in JavaScript, you can use the `XMLHttpRequest` (XHR) API:
 
-```js
+```md
 sequenceDiagram
   participant Client
   participant Server
@@ -35,7 +35,7 @@ sequenceDiagram
 
 Alternatively, you can use the `fetch()` function, which is part of the modern Fetch API, to make HTTP requests:
 
-```js
+```md
 sequenceDiagram
   participant Client
   participant Server
@@ -47,18 +47,22 @@ sequenceDiagram
 
 
 ### Output
-Sequence diagram of first case which uses XHR :
-![458a68e807ca852e0b00a232f7366d87.png](./458a68e807ca852e0b00a232f7366d87.png)
+Sequence diagram of first case which uses XHR:
+
+<img src="458a68e807ca852e0b00a232f7366d87.png" width="512" />
+
 
 
 Sequence diagram of second case which uses the `fetch()` call:
-![e6834e3c5a41a1144afe77284b85f497.png](./e6834e3c5a41a1144afe77284b85f497.png)
+
+<img src="e6834e3c5a41a1144afe77284b85f497.png" width="512" />
+
 
 
 ## Example 2 (State diagram)
 Example of a state machine that represents a light switch with two states: "on" and "off":
 
-```js
+```md
 stateDiagram
   state on
   state off
@@ -68,9 +72,7 @@ stateDiagram
   on --> off : power outage
 ```
 ### Output
-![85c260adeab3ae45a717f53125ac9cb3.png](./85c260adeab3ae45a717f53125ac9cb3.png)
-
-
+<img src="85c260adeab3ae45a717f53125ac9cb3.png" width="512" />
 
 # Conclusion
 These are just some examples of making diagrams with ChatGPT (and Mermaid). You can leverage their combination to learn about something, with diagrams. Or you may also want to create diagrams for...your report!
