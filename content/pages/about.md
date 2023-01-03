@@ -3,4 +3,4 @@ title = "About Me"
 path = "about"
 +++
 
-I dpn't have much to tell about me atm! 🤷
+Thanks for willing to know about me, but I prefer to give less about myself. 🤷
