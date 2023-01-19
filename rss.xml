@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+      <title>jarp0l&#x27;s blog</title>
+        <link>https://jarp0l.github.io/</link>
+        <description></description>
+        <generator>Zola</generator>
+        <language>en</language>
+        <atom:link href="https://jarp0l.github.io/rss.xml" rel="self" type="application/rss+xml"/>
+        <lastBuildDate>Thu, 19 Jan 2023 00:00:00 +0000</lastBuildDate>
+        <item>
+            <title>Reading Discord messages with RSS feed reader</title>
+            <pubDate>Thu, 19 Jan 2023 00:00:00 +0000</pubDate>
+            <link>https://jarp0l.github.io/posts/discord-to-rss-feed/</link>
+            <guid>https://jarp0l.github.io/posts/discord-to-rss-feed/</guid>
+            <description>&lt;p&gt;TL;DR I had a bot listening to messages in Discord. If there were any messages, it would store them in a MongoDB collection and then the messages would be fetched to make an RSS feed.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;the-problem&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#the-problem&quot; aria-label=&quot;Anchor link for: the-problem&quot;&gt;The problem&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;This was over a year ago when we had something called &#x27;Lockdown&#x27;, I wanted to stay away from Discord for the peace of my mind but as our class server in Discord was the only way to remain informed of any class updates, I was having a hard time doing that. I wanted something that was simpler, less&#x2F;not distracting and with no tracking.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;the-idea&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#the-idea&quot; aria-label=&quot;Anchor link for: the-idea&quot;&gt;The idea&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;Around the same time I had discovered about the existence of RSS, which I thought was the ideal solution for these problems.&lt;&#x2F;p&gt;
+&lt;p&gt;I already had a bot running in our Discord server. So I decided I would implement my idea using this bot. The bot was written in Python and was running in Replit, so I just had to add the logic to listen to messages in my channel&#x2F;s of choice. If there was a new message, it had to store them in MongoDB first. Then all that was left to do was to retrieve those messages from the database and structure them into XML file following the RSS 2.0 specification so that RSS readers could parse them.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;about-rss&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#about-rss&quot; aria-label=&quot;Anchor link for: about-rss&quot;&gt;About RSS&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;First, definition from &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;RSS&quot;&gt;Wikipedia entry on RSS&lt;&#x2F;a&gt;:&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;RSS (RDF Site Summary or Really Simple Syndication) is a web feed that allows users and applications to access updates to websites in a standardized, computer-readable format.&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;RSS provides a way of viewing contents at a place aggregated from multiple sources. The sources could be news, blog posts, release notes about something, changelogs, and what not. Rather than having to go to each source and check if anything new has been added, RSS enables the power of viewing the updates from a single place.&lt;&#x2F;p&gt;
+&lt;p&gt;The updates are served in a file which is called RSS feed. The RSS feed is just an extension from XML, and follows &lt;a href=&quot;https:&#x2F;&#x2F;www.rssboard.org&#x2F;rss-specification&quot;&gt;RSS 2.0 specification&lt;&#x2F;a&gt;, which is the current version of the specification.&lt;&#x2F;p&gt;
+&lt;p&gt;To view the RSS feeds, there are clients which are called RSS feed readers. The RSS feed readers parse the RSS feeds to give a pretty-looking interface for viewing the updates. There are all forms of RSS feed readers, from web-based readers to mobile apps to browser extensions.&lt;&#x2F;p&gt;
+&lt;p&gt;This blog also has an RSS feed: &lt;a href=&quot;&#x2F;rss.xml&quot;&gt;&#x2F;rss.xml&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;getting-into-work&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#getting-into-work&quot; aria-label=&quot;Anchor link for: getting-into-work&quot;&gt;Getting into work&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;Before going to the actual RSS feed part, I will explain in short the structure and working of some less important parts of the codebase first (less important in terms of what this post is for).&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;structure&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#structure&quot; aria-label=&quot;Anchor link for: structure&quot;&gt;Structure&lt;&#x2F;a&gt;&lt;&#x2F;h2&gt;
+&lt;p&gt;The application is structured in the following way:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#282a36;color:#f8f8f2;&quot;&gt;&lt;code&gt;&lt;span&gt;.
+&lt;&#x2F;span&gt;&lt;span&gt;| cogs
+&lt;&#x2F;span&gt;&lt;span&gt;	|- admin.py
+&lt;&#x2F;span&gt;&lt;span&gt;	|- clean_url.py
+&lt;&#x2F;span&gt;&lt;span&gt;	|- feed.py
+&lt;&#x2F;span&gt;&lt;span&gt;	|- misc.py
+&lt;&#x2F;span&gt;&lt;span&gt;	|- ping.py
+&lt;&#x2F;span&gt;&lt;span&gt;	|- xkcd_comics.py
+&lt;&#x2F;span&gt;&lt;span&gt;| config
+&lt;&#x2F;span&gt;&lt;span&gt;	|- config.json
+&lt;&#x2F;span&gt;&lt;span&gt;	|- strings.json
+&lt;&#x2F;span&gt;&lt;span&gt;| feed
+&lt;&#x2F;span&gt;&lt;span&gt;	|- rss.xml
+&lt;&#x2F;span&gt;&lt;span&gt;| libs
+&lt;&#x2F;span&gt;&lt;span&gt;	|- config.py
+&lt;&#x2F;span&gt;&lt;span&gt;	|- my_feed.py
+&lt;&#x2F;span&gt;&lt;span&gt;|- keep_alive.py
+&lt;&#x2F;span&gt;&lt;span&gt;|- main.py
+&lt;&#x2F;span&gt;&lt;span&gt;|- poetry.lock
+&lt;&#x2F;span&gt;&lt;span&gt;|- pyproject.toml
+&lt;&#x2F;span&gt;&lt;span&gt;|- README.md
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The entry point to the application is the &lt;code&gt;main.py&lt;&#x2F;code&gt; file. This file consists of mostly code for the Discord bot. However, it also calls the &lt;code&gt;keep_alive()&lt;&#x2F;code&gt; function from &lt;code&gt;keep_alive.py&lt;&#x2F;code&gt; file, which does two key things:&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;running web server&lt;&#x2F;li&gt;
+&lt;li&gt;scheduling and running the task of updating RSS feed&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;I am using &lt;code&gt;poetry&lt;&#x2F;code&gt; to manage dependencies and virtual environment.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;keep-alive-py-file&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#keep-alive-py-file&quot; aria-label=&quot;Anchor link for: keep-alive-py-file&quot;&gt;&lt;code&gt;keep_alive.py&lt;&#x2F;code&gt; file&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;As I mentioned earlier, this file runs web server as well as schedules the task of updating the RSS feed.&lt;&#x2F;p&gt;
+&lt;p&gt;The web server is used to keep the bot running as Replit puts an application (or Repl) to sleep if it is inactive for some time. I keep the bot alive by pinging the root (&lt;code&gt;&#x2F;&lt;&#x2F;code&gt;) every few minutes using &lt;a href=&quot;https:&#x2F;&#x2F;uptimerobot.com&#x2F;&quot;&gt;UptimeRobot&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;The web server also serves the RSS file (XML file) containing Discord messages. The RSS file is kept in the &lt;code&gt;feed&lt;&#x2F;code&gt; drectory (&lt;code&gt;feed&#x2F;rss.xml&lt;&#x2F;code&gt;). So, an RSS feed reader should subscribe to either &lt;code&gt;&#x2F;rss&lt;&#x2F;code&gt; or &lt;code&gt;&#x2F;feed&#x2F;rss.xml&lt;&#x2F;code&gt; path of the web server for RSS feed.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-py &quot;&gt;&lt;code class=&quot;language-py&quot; data-lang=&quot;py&quot;&gt;&lt;span&gt;@app&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;route(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;&#x2F;rss&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#6272a4;&quot;&gt;# another route: &#x2F;feed&#x2F;rss.xml
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ff79c6;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;feed&lt;&#x2F;span&gt;&lt;span&gt;():
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;with &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8be9fd;&quot;&gt;open&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;feed&#x2F;rss.xml&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;as &lt;&#x2F;span&gt;&lt;span&gt;f:
+&lt;&#x2F;span&gt;&lt;span&gt;        xml &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span&gt;f&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;readlines&lt;&#x2F;span&gt;&lt;span&gt;()
+&lt;&#x2F;span&gt;&lt;span&gt;    r &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;Response&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ffb86c;&quot;&gt;response&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span&gt;xml, &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ffb86c;&quot;&gt;status&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;200&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ffb86c;&quot;&gt;mimetype&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;application&#x2F;xml&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;    r&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;headers[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;Content-Type&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;] &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;text&#x2F;xml; charset=utf-8&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;r
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;This file also schedules the task of updating the RSS feed, which happens every 30 minutes:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-py &quot;&gt;&lt;code class=&quot;language-py&quot; data-lang=&quot;py&quot;&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;from &lt;&#x2F;span&gt;&lt;span&gt;apscheduler&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;schedulers&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;background &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;import &lt;&#x2F;span&gt;&lt;span&gt;BackgroundScheduler
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;from &lt;&#x2F;span&gt;&lt;span&gt;libs&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;my_feed &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;import &lt;&#x2F;span&gt;&lt;span&gt;MyFeed
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#6272a4;&quot;&gt;# ...
+&lt;&#x2F;span&gt;&lt;span&gt;scheduler &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;BackgroundScheduler&lt;&#x2F;span&gt;&lt;span&gt;()
+&lt;&#x2F;span&gt;&lt;span&gt;scheduler&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;add_job&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;MyFeed&lt;&#x2F;span&gt;&lt;span&gt;()&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;update_feed, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;interval&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ffb86c;&quot;&gt;minutes&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;30&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;scheduler&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;start&lt;&#x2F;span&gt;&lt;span&gt;()
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The feed updating happens once when the web server starts and also every 30 minutes.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;main-py-file&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#main-py-file&quot; aria-label=&quot;Anchor link for: main-py-file&quot;&gt;&lt;code&gt;main.py&lt;&#x2F;code&gt; file&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;As I stated earlier, this is the entry point to the application. It contains logic to run the bot. To make the bot modular, the commands have been divided into cogs. But we are only concerned with the &lt;code&gt;feed&lt;&#x2F;code&gt; cog (&lt;code&gt;cogs&#x2F;feed.py&lt;&#x2F;code&gt;). This cog listens to messages in certain channels in Discord and stores them in a MongoDB collection.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;the-feed-cog&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#the-feed-cog&quot; aria-label=&quot;Anchor link for: the-feed-cog&quot;&gt;The &lt;code&gt;feed&lt;&#x2F;code&gt; cog&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;This cog consists of the code which handles listening to messages in specific channels which are listed in the array &lt;code&gt;listen_channels&lt;&#x2F;code&gt; in &lt;code&gt;config&#x2F;config.json&lt;&#x2F;code&gt; file. So, if someone posts a new message in one of those channels and it isn&#x27;t from the bot itself, then this message is added to the MongoDB collection.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-py &quot;&gt;&lt;code class=&quot;language-py&quot; data-lang=&quot;py&quot;&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span&gt;ctx&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;channel&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;id &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span&gt;c_listen_channels:
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;MyFeed&lt;&#x2F;span&gt;&lt;span&gt;()&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;add_feed&lt;&#x2F;span&gt;&lt;span&gt;(ctx, ctx&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;attachments)
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h2 id=&quot;adding-to-updating-rss-feed&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#adding-to-updating-rss-feed&quot; aria-label=&quot;Anchor link for: adding-to-updating-rss-feed&quot;&gt;Adding to&#x2F;updating RSS feed&lt;&#x2F;a&gt;&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;feedgen-library&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#feedgen-library&quot; aria-label=&quot;Anchor link for: feedgen-library&quot;&gt;&lt;code&gt;feedgen&lt;&#x2F;code&gt; library&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;For the ease of creating RSS feed, I used a Python library called &lt;code&gt;feedgen&lt;&#x2F;code&gt; (&lt;a href=&quot;https:&#x2F;&#x2F;feedgen.kiesow.be&#x2F;&quot;&gt;link&lt;&#x2F;a&gt;). It made this process a lot easier as I did not have to deal with XML myself.&lt;&#x2F;p&gt;
+&lt;p&gt;In the &lt;code&gt;libs&#x2F;my_feed.py&lt;&#x2F;code&gt; file, the class &lt;code&gt;MyFeed&lt;&#x2F;code&gt; extends the &lt;code&gt;FeedGenerator&lt;&#x2F;code&gt; class from &lt;code&gt;feedgen&lt;&#x2F;code&gt;. Its constuctor initializes the MongoDB client along with preparing information like feed title, subtitle, logo, etc.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;mongodb-uri&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#mongodb-uri&quot; aria-label=&quot;Anchor link for: mongodb-uri&quot;&gt;MongoDB URI&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;The MongoDB URI (or connection string URI) is kept as an environment variable with key &lt;code&gt;MONGODB_URI&lt;&#x2F;code&gt;. The URI has the following format:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#282a36;color:#f8f8f2;&quot;&gt;&lt;code&gt;&lt;span&gt;mongodb:&#x2F;&#x2F;[username:password@]host1[:port1][,...hostN[:portN]][&#x2F;[defaultauthdb][?options]]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The URI in this format consists of all the necessary fields like username, password, host and DB name. Refer to the official docs for detailed explanation: https:&#x2F;&#x2F;www.mongodb.com&#x2F;docs&#x2F;manual&#x2F;reference&#x2F;connection-string&#x2F;&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;adding-a-new-message-to-feed&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#adding-a-new-message-to-feed&quot; aria-label=&quot;Anchor link for: adding-a-new-message-to-feed&quot;&gt;Adding a new message to feed&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;If the bot detects any message in Discord, the &lt;code&gt;add_feed&lt;&#x2F;code&gt; method of &lt;code&gt;MyFeed&lt;&#x2F;code&gt; class is called with the arguments message context and attachment (if any). A feed dictionary is constructed with the following values:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;message_url&lt;&#x2F;code&gt;: message url in Discord&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;channel_name&lt;&#x2F;code&gt;: name of channel where the message was posted&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;message&lt;&#x2F;code&gt;: the message posted&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;author&lt;&#x2F;code&gt;: the name of author of the message&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;publish_date&lt;&#x2F;code&gt;: The date, time and timezone in UTC+0 of the moment of adding the feed&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;pre data-lang=&quot;py&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-py &quot;&gt;&lt;code class=&quot;language-py&quot; data-lang=&quot;py&quot;&gt;&lt;span&gt;new_update &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;message_url&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#8be9fd;&quot;&gt;f&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;https:&#x2F;&#x2F;discord.com&#x2F;channels&#x2F;758544148121780226&#x2F;&lt;&#x2F;span&gt;&lt;span&gt;{channel_id}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&#x2F;&lt;&#x2F;span&gt;&lt;span&gt;{message_id}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;channel_name&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;: channel_name,
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;message&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;: message,
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;author&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;: author,
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;publish_date&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;: str_date,
+&lt;&#x2F;span&gt;&lt;span&gt;        }
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;I did not directly generate the RSS feed. First I inserted the dictionary into a MongoDB collection and then called the &lt;code&gt;update_feed&lt;&#x2F;code&gt; method to generate the feed.&lt;&#x2F;p&gt;
+&lt;p&gt;Inserting a new document into MongoDB collection:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-py &quot;&gt;&lt;code class=&quot;language-py&quot; data-lang=&quot;py&quot;&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;from &lt;&#x2F;span&gt;&lt;span&gt;pymongo &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;import &lt;&#x2F;span&gt;&lt;span&gt;MongoClient
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#6272a4;&quot;&gt;# ...
+&lt;&#x2F;span&gt;&lt;span&gt;s_mongodb &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span&gt;os&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;environ[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;MONGODB_URI&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#6272a4;&quot;&gt;# ...
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;mongo_client &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;MongoClient&lt;&#x2F;span&gt;&lt;span&gt;(s_mongodb, &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ffb86c;&quot;&gt;tls&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;True&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;server_db &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;mongo_client[os&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;environ[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;mongodb_name&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;]]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;updates &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;server_db[os&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;environ[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;collection_name&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;]]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#6272a4;&quot;&gt;# ...
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#6272a4;&quot;&gt;# in add_feed(...):
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;updates&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;insert_one&lt;&#x2F;span&gt;&lt;span&gt;(new_update)
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Data in MongoDB:
+&lt;img src=&quot;https:&#x2F;&#x2F;jarp0l.github.io&#x2F;posts&#x2F;discord-to-rss-feed&#x2F;2c091251d9e46b8eeed5984153428bb5.png&quot; alt=&quot;2c091251d9e46b8eeed5984153428bb5.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;updating-feed&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#updating-feed&quot; aria-label=&quot;Anchor link for: updating-feed&quot;&gt;Updating feed&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;The RSS feed is updated by calling the &lt;code&gt;update_feed&lt;&#x2F;code&gt; method of the &lt;code&gt;MyFeed&lt;&#x2F;code&gt; class. This method iterates through all the documents in the MongoDB collection and then prepares the RSS feed file. It uses &lt;code&gt;find()&lt;&#x2F;code&gt; function to get all the documents in the collection.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-py &quot;&gt;&lt;code class=&quot;language-py&quot; data-lang=&quot;py&quot;&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ff79c6;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;update_feed&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ffb86c;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span&gt;entry &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;updates&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;find&lt;&#x2F;span&gt;&lt;span&gt;():
+&lt;&#x2F;span&gt;&lt;span&gt;			fe &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;add_entry&lt;&#x2F;span&gt;&lt;span&gt;()
+&lt;&#x2F;span&gt;&lt;span&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;color:#6272a4;&quot;&gt;# get message, message channel, author, date-time from db
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;rss_str&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ffb86c;&quot;&gt;pretty&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;True&lt;&#x2F;span&gt;&lt;span&gt;)  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#6272a4;&quot;&gt;# Get the RSS feed as string
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bd93f9;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;rss_file&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;feed&#x2F;rss.xml&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#6272a4;&quot;&gt;# Write the RSS feed to a file
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Generated RSS feed:
+&lt;img src=&quot;https:&#x2F;&#x2F;jarp0l.github.io&#x2F;posts&#x2F;discord-to-rss-feed&#x2F;e481608079311f6495374e72427e9b7e.png&quot; alt=&quot;e481608079311f6495374e72427e9b7e.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;publish-date-time&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#publish-date-time&quot; aria-label=&quot;Anchor link for: publish-date-time&quot;&gt;Publish date-time&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;I was using the &lt;code&gt;datetime&lt;&#x2F;code&gt; and &lt;code&gt;zoneinfo&lt;&#x2F;code&gt; for the date, time and timezone, but I have moved to using &lt;a href=&quot;https:&#x2F;&#x2F;pendulum.eustace.io&#x2F;&quot;&gt;&lt;code&gt;pendulum&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; now.&lt;&#x2F;p&gt;
+&lt;p&gt;Code snippet to get string representation of the date-time of the moment a Discord message is being added to database:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-py &quot;&gt;&lt;code class=&quot;language-py&quot; data-lang=&quot;py&quot;&gt;&lt;span&gt;        publish_date &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span&gt;pendulum&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;now&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ffb86c;&quot;&gt;tz&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;UTC&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;        str_date &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span&gt;publish_date&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;format&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;YYYY-MM-DD HH:mm:ss ZZ&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Code snippet for converting date-time from MongoDB document:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-py &quot;&gt;&lt;code class=&quot;language-py&quot; data-lang=&quot;py&quot;&gt;&lt;span&gt;            fe&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;published&lt;&#x2F;span&gt;&lt;span&gt;(
+&lt;&#x2F;span&gt;&lt;span&gt;                pendulum&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#50fa7b;&quot;&gt;from_format&lt;&#x2F;span&gt;&lt;span&gt;(
+&lt;&#x2F;span&gt;&lt;span&gt;                    entry[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;publish_date&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;], &lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;YYYY-MM-DD HH:mm:ss ZZ&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#ffb86c;&quot;&gt;tz&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ff79c6;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#f1fa8c;&quot;&gt;&amp;quot;UTC&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;                )
+&lt;&#x2F;span&gt;&lt;span&gt;            ) 
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h1 id=&quot;finally&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#finally&quot; aria-label=&quot;Anchor link for: finally&quot;&gt;Finally...&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;I have put together a diagram to show the core working process of this system:
+&lt;img src=&quot;.&#x2F;architecture.jpg&quot; alt=&quot;diagram showing the architecture of system&quot; width=&quot;512&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;The code for this is in GitHub at: &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;jarp0l&#x2F;076bei-bot&quot;&gt;jarp0l&#x2F;076bei-bot&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Disclaimer: I recently updated some stuffs in the code, but have not tested if the new changes work as expected. Also, the code is untested for bugs and exceptions as it was written quite a long time ago. As the bot was written before slash commands were adopted, it doesn&#x27;t support them.&lt;&#x2F;p&gt;
+</description>
+        </item>
+        <item>
+            <title>Diagramming with ChatGPT</title>
+            <pubDate>Tue, 03 Jan 2023 00:00:00 +0000</pubDate>
+            <link>https://jarp0l.github.io/posts/diagramming-with-chatgpt/</link>
+            <guid>https://jarp0l.github.io/posts/diagramming-with-chatgpt/</guid>
+            <description>&lt;h1 id=&quot;introduction&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#introduction&quot; aria-label=&quot;Anchor link for: introduction&quot;&gt;Introduction&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;ChatGPT cannot embed pictures in conversations, but it is still possible to draw diagrams and charts like flowcharts, sequence diagrams, Gantt charts and many others.&lt;&#x2F;p&gt;
+&lt;p&gt;There are tools such as &lt;code&gt;mermaid.js&lt;&#x2F;code&gt; (or, just Mermaid) that enable this. Quoting the official introduction about Mermaid:&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;... is a JavaScript based diagramming and charting tool that renders Markdown-inspired text definitions to create and modify diagrams dynamically.&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;So with Mermaid, you just need to &lt;strong&gt;ask ChatGPT to write Mermaid code to draw diagrams&lt;&#x2F;strong&gt;. Then copy the code and paste it in &lt;a href=&quot;https:&#x2F;&#x2F;mermaid.live&#x2F;&quot;&gt;Mermaid Live Editor&lt;&#x2F;a&gt;, you&#x27;ll get the diagram.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;examples&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#examples&quot; aria-label=&quot;Anchor link for: examples&quot;&gt;Examples&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;h2 id=&quot;example-1-sequence-diagram&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#example-1-sequence-diagram&quot; aria-label=&quot;Anchor link for: example-1-sequence-diagram&quot;&gt;Example 1 (Sequence diagram)&lt;&#x2F;a&gt;&lt;&#x2F;h2&gt;
+&lt;p&gt;Example of making HTTP request in js:&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Q: How do I make an HTTP request in Javascript? Explain with diagram in mermaid.js syntax.&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;ChatGPT (answer stripped):
+To make an HTTP request in JavaScript, you can use the &lt;code&gt;XMLHttpRequest&lt;&#x2F;code&gt; (XHR) API:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;md&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-md &quot;&gt;&lt;code class=&quot;language-md&quot; data-lang=&quot;md&quot;&gt;&lt;span&gt;sequenceDiagram
+&lt;&#x2F;span&gt;&lt;span&gt;  participant Client
+&lt;&#x2F;span&gt;&lt;span&gt;  participant Server
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  Client -&amp;gt;&amp;gt; Server: GET https:&#x2F;&#x2F;api.example.com&#x2F;endpoint
+&lt;&#x2F;span&gt;&lt;span&gt;  Server -&amp;gt;&amp;gt; Client: JSON response
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;br&gt;
+&lt;p&gt;Alternatively, you can use the &lt;code&gt;fetch()&lt;&#x2F;code&gt; function, which is part of the modern Fetch API, to make HTTP requests:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;md&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-md &quot;&gt;&lt;code class=&quot;language-md&quot; data-lang=&quot;md&quot;&gt;&lt;span&gt;sequenceDiagram
+&lt;&#x2F;span&gt;&lt;span&gt;  participant Client
+&lt;&#x2F;span&gt;&lt;span&gt;  participant Server
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  Client -&amp;gt;&amp;gt; Server: GET https:&#x2F;&#x2F;api.example.com&#x2F;endpoint
+&lt;&#x2F;span&gt;&lt;span&gt;  Server -&amp;gt;&amp;gt; Client: JSON response
+&lt;&#x2F;span&gt;&lt;span&gt;  Client -&amp;gt;&amp;gt; Client: log data
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h3 id=&quot;output&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#output&quot; aria-label=&quot;Anchor link for: output&quot;&gt;Output&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;Sequence diagram of first case which uses XHR:&lt;&#x2F;p&gt;
+&lt;img src=&quot;458a68e807ca852e0b00a232f7366d87.png&quot; width=&quot;512&quot; &#x2F;&gt;
+&lt;p&gt;Sequence diagram of second case which uses the &lt;code&gt;fetch()&lt;&#x2F;code&gt; call:&lt;&#x2F;p&gt;
+&lt;img src=&quot;e6834e3c5a41a1144afe77284b85f497.png&quot; width=&quot;512&quot; &#x2F;&gt;
+&lt;h2 id=&quot;example-2-state-diagram&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#example-2-state-diagram&quot; aria-label=&quot;Anchor link for: example-2-state-diagram&quot;&gt;Example 2 (State diagram)&lt;&#x2F;a&gt;&lt;&#x2F;h2&gt;
+&lt;p&gt;Example of a state machine that represents a light switch with two states: &amp;quot;on&amp;quot; and &amp;quot;off&amp;quot;:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;md&quot; style=&quot;background-color:#282a36;color:#f8f8f2;&quot; class=&quot;language-md &quot;&gt;&lt;code class=&quot;language-md&quot; data-lang=&quot;md&quot;&gt;&lt;span&gt;stateDiagram
+&lt;&#x2F;span&gt;&lt;span&gt;  state on
+&lt;&#x2F;span&gt;&lt;span&gt;  state off
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  on --&amp;gt; off : flip switch
+&lt;&#x2F;span&gt;&lt;span&gt;  off --&amp;gt; on : flip switch
+&lt;&#x2F;span&gt;&lt;span&gt;  on --&amp;gt; off : power outage
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h3 id=&quot;output-1&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#output-1&quot; aria-label=&quot;Anchor link for: output-1&quot;&gt;Output&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;img src=&quot;85c260adeab3ae45a717f53125ac9cb3.png&quot; width=&quot;512&quot; &#x2F;&gt;
+&lt;h1 id=&quot;conclusion&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#conclusion&quot; aria-label=&quot;Anchor link for: conclusion&quot;&gt;Conclusion&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;These are just some examples of making diagrams with ChatGPT (and Mermaid). You can leverage their combination to learn about something, with diagrams. Or you may also want to create diagrams for...your report!&lt;&#x2F;p&gt;
+&lt;p&gt;If you want to learn about the capabilities of Mermaid, visit: https:&#x2F;&#x2F;mermaid.js.org&#x2F;.&lt;&#x2F;p&gt;
+</description>
+        </item>
+    </channel>
+</rss>

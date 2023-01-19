@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://jarp0l.github.io/</loc>
+    </url>
+    <url>
+        <loc>https://jarp0l.github.io/about/</loc>
+    </url>
+    <url>
+        <loc>https://jarp0l.github.io/page/1/</loc>
+    </url>
+    <url>
+        <loc>https://jarp0l.github.io/posts/</loc>
+    </url>
+    <url>
+        <loc>https://jarp0l.github.io/posts/diagramming-with-chatgpt/</loc>
+        <lastmod>2023-01-03</lastmod>
+    </url>
+    <url>
+        <loc>https://jarp0l.github.io/posts/discord-to-rss-feed/</loc>
+        <lastmod>2023-01-19</lastmod>
+    </url>
+    <url>
+        <loc>https://jarp0l.github.io/tags/</loc>
+    </url>
+    <url>
+        <loc>https://jarp0l.github.io/tags/chatgpt/</loc>
+    </url>
+    <url>
+        <loc>https://jarp0l.github.io/tags/fun/</loc>
+    </url>
+    <url>
+        <loc>https://jarp0l.github.io/tags/rss/</loc>
+    </url>
+</urlset>
